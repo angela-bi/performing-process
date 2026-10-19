@@ -14,7 +14,6 @@ const CustomHighlightStyle = HighlightStyle.define([
     { tag: t.bool, color: "#D52889" },
 ]);
 
-
 export function Editor({ value, onChange }: { 
   value: string;
   onChange: (code: string) => void;
@@ -28,6 +27,7 @@ export function Editor({ value, onChange }: {
       extensions: [
         basicSetup,
         javascript(),
+        EditorView.lineWrapping,
         syntaxHighlighting(CustomHighlightStyle),
         EditorView.updateListener.of(update => {
           if (update.docChanged) {

@@ -38,16 +38,20 @@ export default function App() {
 
   return (
     <div className="canvas-background">
-      <Window title="Toolbar" defaultX={0} defaultY={0} defaultWidth={600} defaultHeight={60}
+      {/* <Window title="Toolbar" defaultX={0} defaultY={0} defaultWidth={600} defaultHeight={60}
         zIndex={zIndexes.toolbar} onFocus={() => bringToFront('toolbar')}>
         <Toolbar
           onRun={handleRun}
           onUndo={handleUndo}
           onClear={handleClear}
         ></Toolbar>
-      </Window>
+      </Window> */}
       <Window title="Editor" defaultX={0} defaultY={80} defaultWidth={500} defaultHeight={600}
         zIndex={zIndexes.editor} onFocus={() => bringToFront('editor')}>
+          <Toolbar
+          onRun={handleRun}
+          onClear={handleClear}
+        ></Toolbar>
         <Editor value={code} onChange={setCode} />
       </Window>
       <Window title="Preview" defaultX={520} defaultY={80} defaultWidth={500} defaultHeight={600}

@@ -1,5 +1,4 @@
-const defaultSketch = `
-// sensitivity also seems to influence the average brush size, which I may or may not want at times
+const defaultSketch = `// sensitivity also seems to influence the average brush size, which I may or may not want at times
 
 let analyser, mic;
 let started = false;

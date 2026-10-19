@@ -46,13 +46,14 @@ export function Window({ title, defaultX = 0, defaultY = 0, defaultWidth = 400, 
           height: defaultHeight,
           zIndex,
           backgroundColor: '#fff',
-          border: '1px solid #ddd',
+          border: '2px solid ##7a7a7a',
           borderRadius: '6px',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           resize: 'both',
+          fontFamily: "'Montserrat', sans-serif"
         }}
       >
         <div
@@ -62,7 +63,7 @@ export function Window({ title, defaultX = 0, defaultY = 0, defaultWidth = 400, 
           style={{
             padding: '6px 10px',
             backgroundColor: '#f5f5f5',
-            borderBottom: '1px solid #ddd',
+            borderBottom: '1px dashed #ddd',
             cursor: 'grab',
             userSelect: 'none',
             fontSize: '12px',
