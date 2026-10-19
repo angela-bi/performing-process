@@ -3,7 +3,7 @@ import './App.css'
 import { Toolbar} from './components/Toolbar';
 import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
-import { buildSketchHTML } from './hooks/useP5runner';
+import { buildSketchHTML } from './utils/useP5runner';
 import { Window } from './components/Window';
 
 import defaultSketch from './sketches/defaultSketch';
@@ -37,7 +37,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div className="canvas-background">
       <Window title="Toolbar" defaultX={0} defaultY={0} defaultWidth={600} defaultHeight={60}
         zIndex={zIndexes.toolbar} onFocus={() => bringToFront('toolbar')}>
         <Toolbar
