@@ -34,7 +34,7 @@ export default function App() {
       title: 'untitled',
       code: defaultSketch,
       isRunning: false,
-      editorPosition: { x, y, w: 500, h: 600 },
+      editorPosition: { x, y, w: 500, h: 300 },
       previewPosition: { x: x + 520, y, w: 500, h: 600 },
     };
     setSketches(prev => [...prev, newSketch]);
@@ -60,13 +60,33 @@ export default function App() {
     zIndexMap.current[id] = zIndexCounter.current;
   }
 
+  //////////////////////
+  // context menu     //
+  //////////////////////
+
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
   function handleContextMenu(e: React.MouseEvent) {
     e.preventDefault();
-    addSketch(e.clientX, e.clientY);
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  }
+
+  function handleCreateEditor() {
+    if (!contextMenu) return;
+    addSketch(contextMenu.x, contextMenu.y);
+    setContextMenu(null);
+  }
+
+  function handleCloseMenu() {
+    setContextMenu(null);
   }
 
   return (
-    <div className="canvas-background" onContextMenu={handleContextMenu}>
+    <div
+      className="canvas-background"
+      onContextMenu={handleContextMenu}
+      onClick={handleCloseMenu} // click anywhere to dismiss
+    >
       {sketches.map(sketch => (
         <div key={sketch.id}>
           <Editor
@@ -75,6 +95,7 @@ export default function App() {
             onRun={() => updateSketch(sketch.id, { isRunning: true })}
             onClear={() => updateSketch(sketch.id, { isRunning: false })}
             onFocus={() => bringToFront(sketch.id)}
+            onDelete={() => removeSketch(sketch.id)}
             zIndex={zIndexMap.current[sketch.id] ?? 1}
           />
           {sketch.isRunning && (
@@ -87,6 +108,45 @@ export default function App() {
           )}
         </div>
       ))}
+  
+      {contextMenu && (
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            backgroundColor: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '6px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            zIndex: 9999,
+            overflow: 'hidden',
+            fontFamily: 'Montserrat, sans-serif',
+            fontSize: '13px',
+          }}
+        >
+          <button
+            onClick={handleCreateEditor}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '10px 16px',
+              background: 'none',
+              border: 'none',
+              textAlign: 'left',
+              cursor: 'pointer',
+              color: '#333',
+              whiteSpace: 'nowrap',
+              fontFamily: 'Montserrat, sans-serif',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            + Create new editor
+          </button>
+        </div>
+      )}
     </div>
   );
 }

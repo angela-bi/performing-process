@@ -20,10 +20,11 @@ interface EditorProps {
   onRun: () => void;
   onFocus: () => void;
   onClear: () => void;
+  onDelete: () => void;
   zIndex: number;
 }
 
-export function Editor({ sketch, onChange, onRun, onFocus, onClear, zIndex }: EditorProps) {
+export function Editor({ sketch, onChange, onRun, onFocus, onClear, onDelete, zIndex }: EditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView>(null);
   const [pos, setPos] = useState({ x: sketch.editorPosition.x, y: sketch.editorPosition.y });
@@ -136,6 +137,17 @@ export function Editor({ sketch, onChange, onRun, onFocus, onClear, zIndex }: Ed
             flex: 1, cursor: 'text', minWidth: 0,
           }}
         />
+
+        <button
+        onPointerDown={e => e.stopPropagation()}
+        onClick={onDelete}
+        style={{ border: "none", background: "transparent", padding: '4px 4px', marginLeft: 'auto' }}
+        >
+            <svg width="25px" height="25px" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                <line x1="6" y1="6" x2="12" y2="12" stroke="#bdbdbd" strokeWidth="1.5"/>
+                <line x1="12" y1="6" x2="6" y2="12" stroke="#bdbdbd" strokeWidth="1.5"/>
+            </svg>
+        </button>
       </div>
 
       <div ref={editorRef} style={{ flex: 1, overflow: 'auto' }} />
