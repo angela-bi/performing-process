@@ -1,63 +1,92 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import './App.css'
-import { Toolbar} from './components/Toolbar';
 import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
-import { buildSketchHTML } from './utils/useP5runner';
-import { Window } from './components/Window';
 
 import defaultSketch from './sketches/defaultSketch';
 
+export interface Sketch {
+  id: string;
+  title: string;
+  code: string;
+  isRunning: boolean;
+  editorPosition: { x: number; y: number; w: number; h: number };
+  previewPosition: { x: number; y: number; w: number; h: number };
+}
+
 export default function App() {
-  const [code, setCode] = useState(defaultSketch);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [zIndexes, setZIndexes] = useState({ toolbar: 1, editor: 2, preview: 3 });
+  //////////////////////
+  // sketch functions //
+  //////////////////////
 
-  function bringToFront(panel: 'toolbar' | 'editor' | 'preview') {
-    setZIndexes(prev => ({
-      ...prev,
-      [panel]: Math.max(...Object.values(prev)) + 1,
-    }));
+  const [sketches, setSketches] = useState<Sketch[]>(() => {
+    const saved = localStorage.getItem('sketches');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sketches', JSON.stringify(sketches));
+  }, [sketches]);
+
+  function addSketch(x: number, y: number) {
+    const newSketch: Sketch = {
+      id: crypto.randomUUID(),
+      title: 'untitled',
+      code: defaultSketch,
+      isRunning: false,
+      editorPosition: { x, y, w: 500, h: 600 },
+      previewPosition: { x: x + 520, y, w: 500, h: 600 },
+    };
+    setSketches(prev => [...prev, newSketch]);
   }
 
-  function handleRun() {
-    if (!iframeRef.current) return;
-    const html = buildSketchHTML(code);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    iframeRef.current.src = url;
+  function updateSketch(id: string, changes: Partial<Sketch>) {
+    setSketches(prev => prev.map(s => s.id === id ? { ...s, ...changes } : s));
   }
-  
-  function handleUndo() {
-    iframeRef.current?.contentWindow?.postMessage('undo', '*');
+
+  function removeSketch(id: string) {
+    setSketches(prev => prev.filter(s => s.id !== id));
   }
-  
-  function handleClear() {
-    iframeRef.current?.contentWindow?.postMessage('clear', '*');
+
+  //////////////////////
+  // zIndex functions //
+  //////////////////////
+
+  const zIndexCounter = useRef(10);
+  const zIndexMap = useRef<Record<string, number>>({});
+
+  function bringToFront(id: string) {
+    zIndexCounter.current += 1;
+    zIndexMap.current[id] = zIndexCounter.current;
+  }
+
+  function handleContextMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    addSketch(e.clientX, e.clientY);
   }
 
   return (
-    <div className="canvas-background">
-      {/* <Window title="Toolbar" defaultX={0} defaultY={0} defaultWidth={600} defaultHeight={60}
-        zIndex={zIndexes.toolbar} onFocus={() => bringToFront('toolbar')}>
-        <Toolbar
-          onRun={handleRun}
-          onUndo={handleUndo}
-          onClear={handleClear}
-        ></Toolbar>
-      </Window> */}
-      <Window title="Editor" defaultX={0} defaultY={80} defaultWidth={500} defaultHeight={600}
-        zIndex={zIndexes.editor} onFocus={() => bringToFront('editor')}>
-          <Toolbar
-          onRun={handleRun}
-          onClear={handleClear}
-        ></Toolbar>
-        <Editor value={code} onChange={setCode} />
-      </Window>
-      <Window title="Preview" defaultX={520} defaultY={80} defaultWidth={500} defaultHeight={600}
-        zIndex={zIndexes.preview} onFocus={() => bringToFront('preview')}>
-        <Preview iframeRef={iframeRef} />
-      </Window>
+    <div className="canvas-background" onContextMenu={handleContextMenu}>
+      {sketches.map(sketch => (
+        <div key={sketch.id}>
+          <Editor
+            sketch={sketch}
+            onChange={changes => updateSketch(sketch.id, changes)}
+            onRun={() => updateSketch(sketch.id, { isRunning: true })}
+            onClear={() => updateSketch(sketch.id, { isRunning: false })}
+            onFocus={() => bringToFront(sketch.id)}
+            zIndex={zIndexMap.current[sketch.id] ?? 1}
+          />
+          {sketch.isRunning && (
+            <Preview
+              sketch={sketch}
+              onChange={changes => updateSketch(sketch.id, changes)}
+              onFocus={() => bringToFront(sketch.id + '-preview')}
+              zIndex={zIndexMap.current[sketch.id + '-preview'] ?? 1}
+            />
+          )}
+        </div>
+      ))}
     </div>
   );
 }
