@@ -152,6 +152,32 @@ export default function App() {
           </button>
         </div>
       )}
+      <button
+      onClick={e => {
+        e.stopPropagation();
+        const offset = sketches.length * 30;
+        addSketch(80 + offset, 80 + offset);
+      }}
+      style={{
+        position: 'fixed',
+        right: 24,
+        bottom: 24,
+        width: 56,
+        height: 56,
+        borderRadius: '50%',
+        border: 'none',
+        backgroundColor: '#ED225E',
+        color: 'white',
+        fontSize: 28,
+        lineHeight: 1,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+        cursor: 'pointer',
+        zIndex: 9998,
+      }}
+      aria-label="Create new editor"
+    >
+      +
+    </button>
     </div>
   );
 }
