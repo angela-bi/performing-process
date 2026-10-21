@@ -9,3 +9,18 @@
     background-image: radial-gradient(circle, #b0b0b0 1px, transparent 1px);
     background-size: 24px 24px;
   }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  
+  .canvas-background {
+    touch-action: none;
+  }
+  
+  /* keep CodeMirror scrollable by touch */
+  .cm-scroller {
+    touch-action: pan-y;
+  }
