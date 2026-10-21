@@ -10,6 +10,7 @@ export interface Sketch {
   title: string;
   code: string;
   isRunning: boolean;
+  runCount: number;
   editorPosition: { x: number; y: number; w: number; h: number };
   previewPosition: { x: number; y: number; w: number; h: number };
 }
@@ -34,6 +35,7 @@ export default function App() {
       title: 'untitled',
       code: defaultSketch,
       isRunning: false,
+      runCount: 0,
       editorPosition: { x, y, w: 500, h: 300 },
       previewPosition: { x: x + 520, y, w: 500, h: 600 },
     };
@@ -60,9 +62,9 @@ export default function App() {
     zIndexMap.current[id] = zIndexCounter.current;
   }
 
-  //////////////////////
-  // context menu     //
-  //////////////////////
+  //////////////////
+  // context menu //
+  //////////////////
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
@@ -92,7 +94,10 @@ export default function App() {
           <Editor
             sketch={sketch}
             onChange={changes => updateSketch(sketch.id, changes)}
-            onRun={() => updateSketch(sketch.id, { isRunning: true })}
+            onRun={() => updateSketch(sketch.id, { 
+              isRunning: true, 
+              runCount: sketch.runCount + 1
+            })}
             onClear={() => updateSketch(sketch.id, { isRunning: false })}
             onFocus={() => bringToFront(sketch.id)}
             onDelete={() => removeSketch(sketch.id)}

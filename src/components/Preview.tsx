@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import type { Sketch } from '../App';
 import { buildSketchHTML } from '../utils/useP5runner';
 
-interface PreviewWindowProps {
+interface PreviewProps {
   sketch: Sketch;
   onChange: (changes: Partial<Sketch>) => void;
   onFocus: () => void;
   zIndex: number;
 }
 
-export function Preview({ sketch, onChange, onFocus, zIndex }: PreviewWindowProps) {
+export function Preview({ sketch, onChange, onFocus, zIndex }: PreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [pos, setPos] = useState({ x: sketch.previewPosition.x, y: sketch.previewPosition.y });
   const dragging = useRef(false);
@@ -35,11 +35,11 @@ export function Preview({ sketch, onChange, onFocus, zIndex }: PreviewWindowProp
   }
 
   useEffect(() => {
-    if (!iframeRef.current) return;
+    if (!iframeRef.current || !sketch.isRunning) return;
     const html = buildSketchHTML(sketch.code);
     const blob = new Blob([html], { type: 'text/html' });
     iframeRef.current.src = URL.createObjectURL(blob);
-  }, []);
+  }, [sketch.runCount]);
 
   return (
     <div
