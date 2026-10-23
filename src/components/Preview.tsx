@@ -87,7 +87,7 @@ export function Preview({ sketch, onChange, onFocus, onClear, zIndex }: PreviewP
         zIndex,
         backgroundColor: '#fff',
         border: '1px solid #ddd',
-        borderRadius: '6px',
+        borderRadius: '10px',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',

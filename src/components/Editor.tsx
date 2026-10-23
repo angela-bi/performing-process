@@ -50,23 +50,45 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
   }
 
   useEffect(() => {
-    viewRef.current = new EditorView({
+    const view = new EditorView({
       doc: sketch.code,
       extensions: [
         basicSetup,
         javascript(),
         EditorView.lineWrapping,
         syntaxHighlighting(CustomHighlightStyle),
+        EditorView.theme({
+          '&': { height: '100%' },
+          '.cm-scroller': { overflow: 'auto' },
+        }),
         EditorView.updateListener.of(update => {
           if (update.docChanged) {
             onChange({ code: update.state.doc.toString() });
           }
-        })
+        }),
       ],
-      parent: editorRef.current!
+      parent: editorRef.current!,
+    });
+    viewRef.current = view;
+  
+    requestAnimationFrame(() => {
+      view.scrollDOM.scrollTop = sketch.scrollTop ?? 0;
     });
   
-    return () => viewRef.current?.destroy();
+    let timer: number | undefined;
+    const onScroll = () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        onChange({ scrollTop: view.scrollDOM.scrollTop });
+      }, 200);
+    };
+    view.scrollDOM.addEventListener('scroll', onScroll);
+  
+    return () => {
+      clearTimeout(timer);
+      view.scrollDOM.removeEventListener('scroll', onScroll);
+      view.destroy();
+    };
   }, []);
 
   return (
@@ -81,7 +103,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
         zIndex,
         backgroundColor: '#fff',
         border: '1px solid #ddd',
-        borderRadius: '6px',
+        borderRadius: '10px',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -133,7 +155,8 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
             background: 'none', border: 'none', outline: 'none',
             fontFamily: 'Montserrat, sans-serif',
             fontSize: '12px', color: '#888',
-            flex: 1, cursor: 'text', minWidth: 0,
+            flex: 0.4, cursor: 'text', minWidth: 0,
+            borderBottom: '1px dashed',
           }}
         />
 
@@ -143,6 +166,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
         style={{
             display: 'flex',
             alignItems: 'center',
+            marginLeft: 'auto',
             gap: '4px',
             fontFamily: 'Montserrat, sans-serif',
             fontSize: '11px',
@@ -157,13 +181,13 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
             onChange={e => onChange({ keepDrawing: e.target.checked })}
             style={{ cursor: 'pointer', accentColor: '#ED225E' }}
         />
-        keep drawing
+        keep drawing?
         </label>
 
         <button
         onPointerDown={e => e.stopPropagation()}
         onClick={onDelete}
-        style={{ border: "none", background: "transparent", padding: '4px 4px', marginLeft: 'auto' }}
+        style={{ border: "none", background: "transparent", padding: '4px 4px'}}
         >
             <svg width="25px" height="25px" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
                 <line x1="6" y1="6" x2="12" y2="12" stroke="#bdbdbd" strokeWidth="1.5"/>
@@ -172,7 +196,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
         </button>
       </div>
 
-      <div ref={editorRef} style={{ flex: 1, overflow: 'auto' }} />
+      <div ref={editorRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} />
     </div>
   );
 }

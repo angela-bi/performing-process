@@ -14,6 +14,7 @@ export interface Sketch {
   editorPosition: { x: number; y: number; w: number; h: number };
   previewPosition: { x: number; y: number; w: number; h: number };
   keepDrawing: boolean;
+  scrollTop: number;
 }
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
       editorPosition: { x, y, w: 500, h: 300 },
       previewPosition: { x: x + 520, y, w: 500, h: 600 },
       keepDrawing: false,
+      scrollTop: 0
     };
     setSketches(prev => [...prev, newSketch]);
   }
