@@ -14,6 +14,7 @@ export function Preview({ sketch, onChange, onFocus, zIndex }: PreviewProps) {
   const [pos, setPos] = useState({ x: sketch.previewPosition.x, y: sketch.previewPosition.y });
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, wx: 0, wy: 0 });
+  const hasLoaded = useRef(false);
 
   function onPointerDown(e: React.PointerEvent) {
     onFocus();
@@ -35,12 +36,44 @@ export function Preview({ sketch, onChange, onFocus, zIndex }: PreviewProps) {
   }
 
   useEffect(() => {
-    if (!iframeRef.current || !sketch.isRunning) return;
-    const html = buildSketchHTML(sketch.code);
-    const blob = new Blob([html], { type: 'text/html' });
-    iframeRef.current.src = URL.createObjectURL(blob);
+    const iframe = iframeRef.current;
+    if (!iframe || !sketch.isRunning) return;
+  
+    let launched = false;
+    let timer: number | undefined;
+  
+    function launch(snapshot?: string) {
+      if (launched) return;
+      launched = true;
+      window.removeEventListener('message', onMessage);
+      clearTimeout(timer);
+  
+      const html = buildSketchHTML(sketch.code, snapshot);
+      const blob = new Blob([html], { type: 'text/html' });
+      const oldSrc = iframe!.src;
+      iframe!.src = URL.createObjectURL(blob);
+      if (oldSrc.startsWith('blob:')) URL.revokeObjectURL(oldSrc);
+      hasLoaded.current = true;
+    }
+  
+    function onMessage(e: MessageEvent) {
+      if (e.source !== iframe!.contentWindow) return;
+      if (e.data?.type === 'snapshot') launch(e.data.data ?? undefined);
+    }
+  
+    if (!hasLoaded.current) {
+      launch(); // first run, nothing to save
+    } else {
+      window.addEventListener('message', onMessage);
+      iframe.contentWindow?.postMessage('snapshot', '*');
+      timer = window.setTimeout(() => launch(), 500); // fallback if no reply
+    }
+  
+    return () => {
+      window.removeEventListener('message', onMessage);
+      clearTimeout(timer);
+    };
   }, [sketch.runCount]);
-
   return (
     <div
       onMouseDown={onFocus}

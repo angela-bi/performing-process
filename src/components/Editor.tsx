@@ -138,6 +138,29 @@ export function Editor({ sketch, onChange, onRun, onFocus, onClear, onDelete, zI
           }}
         />
 
+        <label
+        onPointerDown={e => e.stopPropagation()}
+        title="Keep the drawing when re-running"
+        style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontFamily: 'Montserrat, sans-serif',
+            fontSize: '11px',
+            color: '#888',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+        }}
+        >
+        <input
+            type="checkbox"
+            checked={!!sketch.keepDrawing}
+            onChange={e => onChange({ keepDrawing: e.target.checked })}
+            style={{ cursor: 'pointer', accentColor: '#ED225E' }}
+        />
+        keep drawing
+        </label>
+
         <button
         onPointerDown={e => e.stopPropagation()}
         onClick={onDelete}

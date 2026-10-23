@@ -13,6 +13,7 @@ export interface Sketch {
   runCount: number;
   editorPosition: { x: number; y: number; w: number; h: number };
   previewPosition: { x: number; y: number; w: number; h: number };
+  keepDrawing: boolean;
 }
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
       runCount: 0,
       editorPosition: { x, y, w: 500, h: 300 },
       previewPosition: { x: x + 520, y, w: 500, h: 600 },
+      keepDrawing: false,
     };
     setSketches(prev => [...prev, newSketch]);
   }
