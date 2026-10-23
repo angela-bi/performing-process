@@ -6,10 +6,11 @@ interface PreviewProps {
   sketch: Sketch;
   onChange: (changes: Partial<Sketch>) => void;
   onFocus: () => void;
+  onClear: () => void;
   zIndex: number;
 }
 
-export function Preview({ sketch, onChange, onFocus, zIndex }: PreviewProps) {
+export function Preview({ sketch, onChange, onFocus, onClear, zIndex }: PreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [pos, setPos] = useState({ x: sketch.previewPosition.x, y: sketch.previewPosition.y });
   const dragging = useRef(false);
@@ -113,6 +114,16 @@ export function Preview({ sketch, onChange, onFocus, zIndex }: PreviewProps) {
         }}
       >
         {sketch.title}
+        <button
+        onPointerDown={e => e.stopPropagation()}
+        onClick={onClear}
+        style={{ border: "none", background: "transparent", padding: '4px 4px', marginLeft: 'auto' }}
+        >
+            <svg width="25px" height="25px" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                <line x1="6" y1="6" x2="12" y2="12" stroke="#bdbdbd" strokeWidth="1.5"/>
+                <line x1="12" y1="6" x2="6" y2="12" stroke="#bdbdbd" strokeWidth="1.5"/>
+            </svg>
+        </button>
       </div>
 
       <iframe

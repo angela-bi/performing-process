@@ -100,7 +100,6 @@ export default function App() {
               isRunning: true, 
               runCount: sketch.runCount + 1
             })}
-            onClear={() => updateSketch(sketch.id, { isRunning: false })}
             onFocus={() => bringToFront(sketch.id)}
             onDelete={() => removeSketch(sketch.id)}
             zIndex={zIndexMap.current[sketch.id] ?? 1}
@@ -110,6 +109,7 @@ export default function App() {
               sketch={sketch}
               onChange={changes => updateSketch(sketch.id, changes)}
               onFocus={() => bringToFront(sketch.id + '-preview')}
+              onClear={() => updateSketch(sketch.id, { isRunning: false })}
               zIndex={zIndexMap.current[sketch.id + '-preview'] ?? 1}
             />
           )}

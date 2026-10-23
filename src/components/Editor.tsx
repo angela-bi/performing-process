@@ -19,12 +19,11 @@ interface EditorProps {
   onChange: (changes: Partial<Sketch>) => void;
   onRun: () => void;
   onFocus: () => void;
-  onClear: () => void;
   onDelete: () => void;
   zIndex: number;
 }
 
-export function Editor({ sketch, onChange, onRun, onFocus, onClear, onDelete, zIndex }: EditorProps) {
+export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: EditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView>(null);
   const [pos, setPos] = useState({ x: sketch.editorPosition.x, y: sketch.editorPosition.y });
@@ -116,7 +115,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onClear, onDelete, zI
             <polygon points="5.5 5 13 9 5 14" fill="white"/>
           </svg>
         </button>
-        <button
+        {/* <button
           onPointerDown={e => e.stopPropagation()}
           onClick={onClear}
           style={{ border: "none", background: "transparent", padding: '2px 2px' }}
@@ -125,7 +124,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onClear, onDelete, zI
             <circle r="8" cx="9" cy="9" fill="#bdbdbd"/>
             <rect width="7" height="7" x="5.5" y="5.5" fill="#474747"/>
           </svg>
-        </button>
+        </button> */}
         <input
           value={sketch.title}
           onChange={e => onChange({ title: e.target.value })}
