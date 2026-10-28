@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Sketch } from '../App';
 import { buildSketchHTML } from '../utils/useP5runner';
+import type { Sketch } from '../App';
+import type { ModuleDoc } from '../App';
 
 interface PreviewProps {
   sketch: Sketch;
@@ -8,9 +9,10 @@ interface PreviewProps {
   onFocus: () => void;
   onClear: () => void;
   zIndex: number;
+  modules: ModuleDoc[]
 }
 
-export function Preview({ sketch, onChange, onFocus, onClear, zIndex }: PreviewProps) {
+export function Preview({ sketch, onChange, onFocus, onClear, zIndex, modules }: PreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [pos, setPos] = useState({ x: sketch.previewPosition.x, y: sketch.previewPosition.y });
   const dragging = useRef(false);
@@ -49,7 +51,7 @@ export function Preview({ sketch, onChange, onFocus, onClear, zIndex }: PreviewP
       window.removeEventListener('message', onMessage);
       clearTimeout(timer);
   
-      const html = buildSketchHTML(sketch.code, snapshot);
+      const html = buildSketchHTML(sketch.code, snapshot, modules);
       const blob = new Blob([html], { type: 'text/html' });
       const oldSrc = iframe!.src;
       iframe!.src = URL.createObjectURL(blob);
@@ -102,7 +104,7 @@ export function Preview({ sketch, onChange, onFocus, onClear, zIndex }: PreviewP
         style={{
           display: 'flex',
           alignItems: 'center',
-          padding: '4px 8px',
+          padding: '4px 10px',
           backgroundColor: '#f5f5f5',
           borderBottom: '1px solid #ddd',
           cursor: 'grab',

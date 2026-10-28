@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import './App.css'
 import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
+import { Module } from './components/Module';
 
-import defaultSketch from './sketches/defaultSketch';
+import defaultSketch from './defaults/defaultSketch';
+import defaultModule from './defaults/defaultModule';
 
 export interface Sketch {
   id: string;
@@ -15,6 +17,14 @@ export interface Sketch {
   previewPosition: { x: number; y: number; w: number; h: number };
   keepDrawing: boolean;
   scrollTop: number;
+}
+
+export interface ModuleDoc {
+  id: string;
+  name: string;
+  code: string;
+  scrollTop: number;
+  position: { x: number; y: number; w: number; h: number };
 }
 
 export default function App() {
@@ -32,9 +42,10 @@ export default function App() {
   }, [sketches]);
 
   function addSketch(x: number, y: number) {
-    const newSketch: Sketch = {
-      id: crypto.randomUUID(),
-      title: 'untitled',
+    const id = crypto.randomUUID();
+    setSketches(prev => [...prev, {
+      id: id,
+      title: nextName('editor', prev.map(s => s.title)),
       code: defaultSketch,
       isRunning: false,
       runCount: 0,
@@ -42,8 +53,8 @@ export default function App() {
       previewPosition: { x: x + 520, y, w: 500, h: 600 },
       keepDrawing: false,
       scrollTop: 0
-    };
-    setSketches(prev => [...prev, newSketch]);
+    }]);
+    bringToFront(id);
   }
 
   function updateSketch(id: string, changes: Partial<Sketch>) {
@@ -55,8 +66,45 @@ export default function App() {
   }
 
   //////////////////////
-  // zIndex functions //
+  // module functions //
   //////////////////////
+
+  const [modules, setModules] = useState<ModuleDoc[]>(() => {
+    const saved = localStorage.getItem('modules');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('modules', JSON.stringify(modules));
+  }, [modules]);
+  
+  function addModule(x: number, y: number) {
+    setModules(prev => [...prev, {
+      id: crypto.randomUUID(),
+      name: `module-${prev.length + 1}`,
+      code: defaultModule,
+      scrollTop: 0,
+      position: { x, y, w: 460, h: 320 },
+    }]);
+  }
+  
+  function updateModule(id: string, changes: Partial<ModuleDoc>) {
+    setModules(prev => prev.map(m => m.id === id ? { ...m, ...changes } : m));
+  }
+  
+  function removeModule(id: string) {
+    setModules(prev => prev.filter(m => m.id !== id));
+  }
+
+  ///////////////////////////////
+  // zIndex + naming functions //
+  ///////////////////////////////
+
+  function nextName(prefix: string, existing: string[], sep = ' ') {
+    let n = 1;
+    while (existing.includes(`${prefix}${sep}${n}`)) n++;
+    return `${prefix}${sep}${n}`;
+  }
 
   const zIndexCounter = useRef(10);
   const zIndexMap = useRef<Record<string, number>>({});
@@ -66,32 +114,47 @@ export default function App() {
     zIndexMap.current[id] = zIndexCounter.current;
   }
 
-  //////////////////
-  // context menu //
-  //////////////////
+  //////////
+  // menu //
+  //////////
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  function handleContextMenu(e: React.MouseEvent) {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY });
+  function nextSpot() {
+    const n = (sketches.length + modules.length) % 8;
+    return { x: 60 + n * 30, y: 60 + n * 30 };
+  }
+  
+  function handleAddEditor() {
+    const { x, y } = nextSpot();
+    addSketch(x, y);
+    setMenuOpen(false);
+  }
+  
+  function handleAddModule() {
+    const { x, y } = nextSpot();
+    addModule(x, y);
+    setMenuOpen(false);
   }
 
-  function handleCreateEditor() {
-    if (!contextMenu) return;
-    addSketch(contextMenu.x, contextMenu.y);
-    setContextMenu(null);
-  }
-
-  function handleCloseMenu() {
-    setContextMenu(null);
-  }
+  const menuItemStyle: React.CSSProperties = {
+    padding: '10px 16px',
+    backgroundColor: '#fff',
+    border: '1px solid #ddd',
+    borderRadius: 20,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+    fontFamily: 'Montserrat, sans-serif',
+    fontSize: 13,
+    color: '#333',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  };
 
   return (
     <div
       className="canvas-background"
-      onContextMenu={handleContextMenu}
-      onClick={handleCloseMenu} // click anywhere to dismiss
+      // onContextMenu={handleContextMenu}
+      onClick={() => setMenuOpen(false)}
     >
       {sketches.map(sketch => (
         <div key={sketch.id}>
@@ -113,75 +176,66 @@ export default function App() {
               onFocus={() => bringToFront(sketch.id + '-preview')}
               onClear={() => updateSketch(sketch.id, { isRunning: false })}
               zIndex={zIndexMap.current[sketch.id + '-preview'] ?? 1}
+              modules={modules}
             />
           )}
         </div>
       ))}
   
-      {contextMenu && (
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            left: contextMenu.x,
-            top: contextMenu.y,
-            backgroundColor: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: '6px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            zIndex: 9999,
-            overflow: 'hidden',
-            fontFamily: 'Montserrat, sans-serif',
-            fontSize: '13px',
-          }}
-        >
-          <button
-            onClick={handleCreateEditor}
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '10px 16px',
-              background: 'none',
-              border: 'none',
-              textAlign: 'left',
-              cursor: 'pointer',
-              color: '#333',
-              whiteSpace: 'nowrap',
-              fontFamily: 'Montserrat, sans-serif',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            + Create new editor
-          </button>
-        </div>
-      )}
-      <button
-      onClick={e => {
-        e.stopPropagation();
-        const offset = sketches.length * 30;
-        addSketch(80 + offset, 80 + offset);
-      }}
+      {modules.map(m => (
+        <Module
+          key={m.id}
+          module={m}
+          allNames={modules.map(x => x.name)}
+          onChange={changes => updateModule(m.id, changes)}
+          onFocus={() => bringToFront(m.id)}
+          onDelete={() => removeModule(m.id)}
+          zIndex={zIndexMap.current[m.id] ?? 1}
+        />
+      ))}
+
+    <div
+      onClick={e => e.stopPropagation()}
       style={{
         position: 'fixed',
         right: 24,
         bottom: 24,
-        width: 56,
-        height: 56,
-        borderRadius: '50%',
-        border: 'none',
-        backgroundColor: '#ED225E',
-        color: 'white',
-        fontSize: 28,
-        lineHeight: 1,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-        cursor: 'pointer',
         zIndex: 9998,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        gap: 12,
       }}
-      aria-label="Create new editor"
     >
-      +
-    </button>
+      {menuOpen && (
+        <>
+          <button onClick={handleAddModule} style={menuItemStyle}>+ New module</button>
+          <button onClick={handleAddEditor} style={menuItemStyle}>+ New editor</button>
+        </>
+      )}
+
+      <button
+        onClick={() => setMenuOpen(o => !o)}
+        aria-label={menuOpen ? 'Close menu' : 'Add editor or module'}
+        aria-expanded={menuOpen}
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          border: 'none',
+          backgroundColor: '#ED225E',
+          color: 'white',
+          fontSize: 28,
+          lineHeight: 1,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          cursor: 'pointer',
+          transform: menuOpen ? 'rotate(45deg)' : 'none',
+          transition: 'transform 0.15s',
+        }}
+      >
+        +
+      </button>
+    </div>
     </div>
   );
 }

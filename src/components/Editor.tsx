@@ -136,6 +136,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
             <circle r="8" cx="9" cy="9" fill="#ED225E"/>
             <polygon points="5.5 5 13 9 5 14" fill="white"/>
           </svg>
+          {/* <img src="./public/play_button.png" alt="Icon Description" width="20" height="20"></img> */}
         </button>
         {/* <button
           onPointerDown={e => e.stopPropagation()}
