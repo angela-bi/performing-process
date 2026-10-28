@@ -28,7 +28,6 @@ const sanitize = (s: string) => s.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 export function Module({ module, allNames, onChange, onFocus, onDelete, zIndex }: ModuleProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: module.position.x, y: module.position.y });
-  const [size, setSize] = useState({ w: module.position.w, h: module.position.h });
   const posRef = useRef(pos);
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, wx: 0, wy: 0 });
@@ -104,7 +103,7 @@ export function Module({ module, allNames, onChange, onFocus, onDelete, zIndex }
       onMouseDown={onFocus}
       style={{
         position: 'absolute', left: pos.x, top: pos.y,
-        width: size.w, height: size.h, zIndex,
+        // width: size.w, height: size.h, zIndex,
         backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '10px',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
