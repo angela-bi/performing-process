@@ -103,9 +103,9 @@ export function Module({ module, allNames, onChange, onFocus, onDelete, zIndex }
       onMouseDown={onFocus}
       style={{
         position: 'absolute', left: pos.x, top: pos.y,
-        // width: size.w, height: size.h, zIndex,
-        zIndex,
+        width: module.position.w, height: module.position.h, zIndex,
         backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '10px',
+        resize: 'both',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
       }}
