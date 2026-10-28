@@ -104,6 +104,7 @@ export function Module({ module, allNames, onChange, onFocus, onDelete, zIndex }
       style={{
         position: 'absolute', left: pos.x, top: pos.y,
         // width: size.w, height: size.h, zIndex,
+        zIndex,
         backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '10px',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
