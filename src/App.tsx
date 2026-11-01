@@ -6,6 +6,7 @@ import { Module } from './components/Module';
 
 import defaultSketch from './defaults/defaultSketch';
 import defaultModule from './defaults/defaultModule';
+import { startAudioHub } from './utils/audioHub';
 
 export interface Sketch {
   id: string;
@@ -161,10 +162,10 @@ export default function App() {
           <Editor
             sketch={sketch}
             onChange={changes => updateSketch(sketch.id, changes)}
-            onRun={() => updateSketch(sketch.id, { 
-              isRunning: true, 
-              runCount: sketch.runCount + 1
-            })}
+            onRun={() => {
+              startAudioHub();
+              updateSketch(sketch.id, { isRunning: true, runCount: sketch.runCount + 1});
+            }}
             onFocus={() => bringToFront(sketch.id)}
             onDelete={() => removeSketch(sketch.id)}
             zIndex={zIndexMap.current[sketch.id] ?? 1}
