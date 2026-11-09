@@ -103,9 +103,11 @@ export function Module({ module, allNames, onChange, onFocus, onDelete, zIndex }
       onMouseDown={onFocus}
       style={{
         position: 'absolute', left: pos.x, top: pos.y,
-        width: module.position.w, height: module.position.h, zIndex,
+        width: module.position.w, 
+        height: module.minimized ? 'auto' : module.position.h,
+        zIndex,
         backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '10px',
-        resize: 'both',
+        resize: module.minimized ? 'none' : 'both',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
       }}
@@ -137,6 +139,24 @@ export function Module({ module, allNames, onChange, onFocus, onDelete, zIndex }
         <span style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>
           {invalid ? 'name taken' : `import … from '${nameDraft}'`}
         </span>
+
+        <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={() => onChange({ minimized: !module.minimized })}
+          title={module.minimized ? 'Show code' : 'Hide code'}
+          style={{ border: 'none', background: 'transparent', padding: '4px' }}
+        >
+          <svg width="25" height="25" viewBox="0 0 18 18">
+            {module.minimized ? (
+              // chevron down: expand
+              <polyline points="5,7 9,11 13,7" fill="none" stroke="#bdbdbd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            ) : (
+              // minus: minimize
+              <line x1="5" y1="9" x2="13" y2="9" stroke="#bdbdbd" strokeWidth="1.5" strokeLinecap="round" />
+            )}
+          </svg>
+        </button>
+
         <button
           onPointerDown={e => e.stopPropagation()}
           onClick={onDelete}
@@ -149,7 +169,7 @@ export function Module({ module, allNames, onChange, onFocus, onDelete, zIndex }
         </button>
       </div>
 
-      <div ref={editorRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} />
+      <div ref={editorRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: module.minimized ? 'none' : 'block', }} />
     </div>
   );
 }

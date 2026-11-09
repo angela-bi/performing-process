@@ -99,7 +99,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
         left: pos.x,
         top: pos.y,
         width: sketch.editorPosition.w,
-        height: sketch.editorPosition.h,
+        height: sketch.minimized ? 'auto' : sketch.editorPosition.h,
         zIndex,
         backgroundColor: '#fff',
         border: '1px solid #ddd',
@@ -108,7 +108,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-        resize: 'both',
+        resize: sketch.minimized ? 'none' : 'both',
       }}
     >
       <div
@@ -186,6 +186,23 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
         </label>
 
         <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={() => onChange({ minimized: !sketch.minimized })}
+          title={sketch.minimized ? 'Show code' : 'Hide code'}
+          style={{ border: 'none', background: 'transparent', padding: '4px' }}
+        >
+          <svg width="25" height="25" viewBox="0 0 18 18">
+            {sketch.minimized ? (
+              // chevron down: expand
+              <polyline points="5,7 9,11 13,7" fill="none" stroke="#bdbdbd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            ) : (
+              // minus: minimize
+              <line x1="5" y1="9" x2="13" y2="9" stroke="#bdbdbd" strokeWidth="1.5" strokeLinecap="round" />
+            )}
+          </svg>
+        </button>
+
+        <button
         onPointerDown={e => e.stopPropagation()}
         onClick={onDelete}
         style={{ border: "none", background: "transparent", padding: '4px 4px'}}
@@ -197,7 +214,7 @@ export function Editor({ sketch, onChange, onRun, onFocus, onDelete, zIndex }: E
         </button>
       </div>
 
-      <div ref={editorRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} />
+      <div ref={editorRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: sketch.minimized ? 'none' : 'block'}} />
     </div>
   );
 }

@@ -18,6 +18,7 @@ export interface Sketch {
   previewPosition: { x: number; y: number; w: number; h: number };
   keepDrawing: boolean;
   scrollTop: number;
+  minimized?: boolean;
 }
 
 export interface ModuleDoc {
@@ -26,6 +27,7 @@ export interface ModuleDoc {
   code: string;
   scrollTop: number;
   position: { x: number; y: number; w: number; h: number };
+  minimized?: boolean;
 }
 
 export default function App() {
