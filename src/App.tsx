@@ -19,6 +19,7 @@ export interface Sketch {
   keepDrawing: boolean;
   scrollTop: number;
   minimized?: boolean;
+  autoRefresh?: boolean;
 }
 
 export interface ModuleDoc {

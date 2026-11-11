@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { buildSketchHTML } from '../utils/useP5runner';
 import type { Sketch } from '../App';
 import type { ModuleDoc } from '../App';
+import { findSyntaxError } from '../utils/syntax';
 
 interface PreviewProps {
   sketch: Sketch;
@@ -18,6 +19,12 @@ export function Preview({ sketch, onChange, onFocus, onClear, zIndex, modules }:
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, wx: 0, wy: 0 });
   const hasLoaded = useRef(false);
+  const latest = useRef(sketch);
+  latest.current = sketch;
+  const [syntaxError, setSyntaxError] = useState<string | null>(null);
+
+  const modulesCode = modules.map(m => m.name + '\n' + m.code).join('\u0000');
+  const lastCode = useRef(sketch.code + modulesCode);
 
   function onPointerDown(e: React.PointerEvent) {
     onFocus();
@@ -37,6 +44,30 @@ export function Preview({ sketch, onChange, onFocus, onClear, zIndex, modules }:
     dragging.current = false;
     onChange({ previewPosition: { ...sketch.previewPosition, x: pos.x, y: pos.y } });
   }
+
+  useEffect(() => {
+    const current = sketch.code + modulesCode;
+    if (current === lastCode.current) return;
+    lastCode.current = current;
+    if (!sketch.autoRefresh) return;
+  
+    const timer = window.setTimeout(() => {
+      const files = [
+        { name: sketch.title, code: sketch.code },
+        ...modules.map(m => ({ name: m.name, code: m.code })),
+      ];
+      for (const f of files) {
+        const line = findSyntaxError(f.code);
+        if (line !== null) {
+          setSyntaxError(`${f.name}, line ${line}`);
+          return;
+        }
+      }
+      setSyntaxError(null);
+      onChange({ runCount: latest.current.runCount + 1 });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [sketch.code, modulesCode]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -77,6 +108,19 @@ export function Preview({ sketch, onChange, onFocus, onClear, zIndex, modules }:
       clearTimeout(timer);
     };
   }, [sketch.runCount]);
+
+  useEffect(() => {
+    const current = sketch.code + modulesCode;
+    if (current === lastCode.current) return;
+    lastCode.current = current;
+    if (!sketch.autoRefresh) return;
+  
+    const timer = window.setTimeout(() => {
+      onChange({ runCount: latest.current.runCount + 1 });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [sketch.code, modulesCode]);
+
   return (
     <div
       onMouseDown={onFocus}
@@ -116,10 +160,46 @@ export function Preview({ sketch, onChange, onFocus, onClear, zIndex, modules }:
         }}
       >
         {sketch.title}
+
+        {syntaxError && (
+          <span style={{ color: '#ED225E', marginLeft: 8, fontSize: 11 }}>
+            paused: syntax error in {syntaxError}
+          </span>
+        )}
+
+        <label
+          onPointerDown={e => e.stopPropagation()}
+          title="Re-run automatically when code changes"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            marginLeft: 'auto',
+            fontSize: '11px',
+            color: '#888',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={!!sketch.autoRefresh}
+            onChange={e => onChange({ autoRefresh: e.target.checked })}
+            style={{ cursor: 'pointer', accentColor: '#ED225E' }}
+          />
+          auto-refresh
+        </label>
+
+        <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={onClear}
+          style={{ border: 'none', background: 'transparent', padding: '4px'}}
+        />
+
         <button
         onPointerDown={e => e.stopPropagation()}
         onClick={onClear}
-        style={{ border: "none", background: "transparent", padding: '4px 4px', marginLeft: 'auto' }}
+        style={{ border: "none", background: "transparent", padding: '4px 4px'}}
         >
             <svg width="25px" height="25px" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
                 <line x1="6" y1="6" x2="12" y2="12" stroke="#bdbdbd" strokeWidth="1.5"/>
@@ -129,6 +209,7 @@ export function Preview({ sketch, onChange, onFocus, onClear, zIndex, modules }:
       </div>
 
       <iframe
+        allow="camera; microphone"
         ref={iframeRef}
         style={{ flex: 1, border: 'none', width: '100%' }}
         sandbox="allow-scripts allow-same-origin"
