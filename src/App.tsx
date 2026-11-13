@@ -6,7 +6,14 @@ import { Module } from './components/Module';
 
 import defaultSketch from './defaults/defaultSketch';
 import defaultModule from './defaults/defaultModule';
-import { startAudioHub } from './utils/audioHub';
+import { SoundWindow } from './components/soundWindow';
+
+export interface SoundDoc {
+  id: string;
+  title: string;
+  position: { x: number; y: number; w: number; h: number };
+  deviceId?: string;
+}
 
 export interface Sketch {
   id: string;
@@ -32,6 +39,29 @@ export interface ModuleDoc {
 }
 
 export default function App() {
+
+  //////////////////////
+  // sound functions //
+  //////////////////////
+
+  const [sounds, setSounds] = useState<SoundDoc[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sounds') ?? '[]'); } catch { return []; }
+  });
+  useEffect(() => { localStorage.setItem('sounds', JSON.stringify(sounds)); }, [sounds]);
+
+  function addSound(x: number, y: number) {
+    const id = crypto.randomUUID();
+    setSounds(prev => [...prev, {
+      id,
+      title: nextName('sound', prev.map(s => s.title)),
+      position: { x, y, w: 420, h: 520 },
+    }]);
+    bringToFront(id);
+  }
+  const updateSound = (id: string, c: Partial<SoundDoc>) =>
+    setSounds(prev => prev.map(s => (s.id === id ? { ...s, ...c } : s)));
+  const removeSound = (id: string) => setSounds(prev => prev.filter(s => s.id !== id));
+
   //////////////////////
   // sketch functions //
   //////////////////////
@@ -166,7 +196,6 @@ export default function App() {
             sketch={sketch}
             onChange={changes => updateSketch(sketch.id, changes)}
             onRun={() => {
-              startAudioHub();
               updateSketch(sketch.id, { isRunning: true, runCount: sketch.runCount + 1});
             }}
             onFocus={() => bringToFront(sketch.id)}
@@ -198,6 +227,17 @@ export default function App() {
         />
       ))}
 
+      {sounds.map(s => (
+      <SoundWindow
+        key={s.id}
+        doc={s}
+        onChange={c => updateSound(s.id, c)}
+        onFocus={() => bringToFront(s.id)}
+        onDelete={() => removeSound(s.id)}
+        zIndex={zIndexMap.current[s.id] ?? 1}
+      />
+    ))}
+
     <div
       onClick={e => e.stopPropagation()}
       style={{
@@ -215,6 +255,7 @@ export default function App() {
         <>
           <button onClick={handleAddModule} style={menuItemStyle}>+ New module</button>
           <button onClick={handleAddEditor} style={menuItemStyle}>+ New editor</button>
+          <button onClick={() => { const { x, y } = nextSpot(); addSound(x, y); setMenuOpen(false); }} style={menuItemStyle}>+ New sound</button>
         </>
       )}
 
