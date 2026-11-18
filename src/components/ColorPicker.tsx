@@ -109,7 +109,7 @@ function HueSlider({ hue, onChange }: { hue: number; onChange: (h: number) => vo
       <div style={{
         position: 'absolute', top: '50%', left: `${(hue / 360) * 100}%`,
         width: 16, height: 16, borderRadius: '50%',
-        border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,.3)',
+        border: '3px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 0 0 0.5px rgba(0,0,0,.3)',
         transform: 'translate(-50%,-50%)', pointerEvents: 'none',
         background: `hsl(${hue},100%,50%)`,
       }} />
@@ -135,30 +135,44 @@ function AlphaSlider({
   return (
     <div
       ref={trackRef}
-      style={{ flex: 1, height: 12, borderRadius: 6, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+      style={{ flex: 1, position: 'relative', height: 16, cursor: 'pointer' }}
       {...drag}
     >
-      {/* checkerboard */}
+      {/* clipped track visuals — inset so thumb can overflow */}
       <div style={{
-        position: 'absolute', inset: 0,
-        backgroundImage: `linear-gradient(45deg,#ccc 25%,transparent 25%),
-          linear-gradient(-45deg,#ccc 25%,transparent 25%),
-          linear-gradient(45deg,transparent 75%,#ccc 75%),
-          linear-gradient(-45deg,transparent 75%,#ccc 75%)`,
-        backgroundSize: '6px 6px',
-        backgroundPosition: '0 0,0 3px,3px -3px,-3px 0',
-      }} />
-      {/* color gradient */}
+        position: 'absolute',
+        left: 8, right: 8,          // ← inset by half the thumb width
+        top: '50%', transform: 'translateY(-50%)',
+        height: 12, borderRadius: 6,
+        overflow: 'hidden',
+      }}>
+        {/* checkerboard */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `linear-gradient(45deg,#ccc 25%,transparent 25%),
+            linear-gradient(-45deg,#ccc 25%,transparent 25%),
+            linear-gradient(45deg,transparent 75%,#ccc 75%),
+            linear-gradient(-45deg,transparent 75%,#ccc 75%)`,
+          backgroundSize: '6px 6px',
+          backgroundPosition: '0 0,0 3px,3px -3px,-3px 0',
+        }} />
+        {/* color gradient */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `linear-gradient(to right,rgba(${r},${g},${b},0),rgba(${r},${g},${b},1))`,
+        }} />
+      </div>
+
+      {/* thumb — lives on the outer div, not clipped */}
       <div style={{
-        position: 'absolute', inset: 0, borderRadius: 6,
-        background: `linear-gradient(to right,rgba(${r},${g},${b},0),rgba(${r},${g},${b},1))`,
-      }} />
-      {/* thumb */}
-      <div style={{
-        position: 'absolute', top: '50%', left: `${alpha * 100}%`,
+        position: 'absolute',
+        top: '50%',
+        left: `calc(8px + ${alpha} * (100% - 16px))`,  // ← maps 0→8px, 1→100%-8px
         width: 16, height: 16, borderRadius: '50%',
-        border: '2px solid #fff', boxShadow: '0 0 0 1px rgba(0,0,0,.3)',
-        transform: 'translate(-50%,-50%)', pointerEvents: 'none',
+        border: '3px solid rgba(255,255,255,0.8)',
+        boxShadow: '0 0 0 1px rgba(0,0,0,.3)',
+        transform: 'translate(-50%, -50%)',
+        pointerEvents: 'none',
         background: `rgba(${r},${g},${b},${alpha})`,
       }} />
     </div>
@@ -215,7 +229,7 @@ function SatValCanvas({
         left: `${sat * 100}%`,
         top: `${(1 - val) * 100}%`,
         width: 14, height: 14, borderRadius: '50%',
-        border: '2px solid #fff',
+        border: '3px solid rgba(255,255,255,0.7)',
         boxShadow: `0 0 0 1px rgba(0,0,0,${luma > 128 ? 0.4 : 0.2})`,
         transform: 'translate(-50%,-50%)',
         pointerEvents: 'none',
@@ -290,13 +304,6 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
     commit({ h: hh, s: ss, v: vv, a });
   }, [r, g, b, a, commit, pushHistory]);
 
-  const onCopy = useCallback(() => {
-    navigator.clipboard?.writeText(hex);
-    pushHistory(hex);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  }, [hex, pushHistory]);
-
   const onEyeDrop = useCallback(async () => {
     if (typeof (window as any).EyeDropper === 'undefined') return;
     try {
@@ -311,17 +318,7 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
   const row: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 10,
   };
-  const circleBtn: React.CSSProperties = {
-    width: 30, height: 30, borderRadius: '50%', border: '1px solid #ccc',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', background: '#f5f5f5', flexShrink: 0,
-    color: '#666',
-  };
-  const inputStyle: React.CSSProperties = {
-    width: '100%', fontFamily: 'monospace', fontSize: 11, textAlign: 'center',
-    background: '#f5f5f5', border: '1px solid #e0e0e0', borderRadius: 6,
-    padding: '4px 2px', color: '#333', outline: 'none',
-  };
+
 
   return (
     <div
@@ -334,7 +331,8 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
             borderRadius: '10px',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
         }}
     >
         <div
@@ -394,14 +392,14 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
 
       {/* history */}
       {history.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 14px 0' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0, padding: '10px 14px 10px' }}>
           {history.map(hex => (
             <div
               key={hex}
               title={hex}
               onClick={() => { const next = hexToHsva(hex); commit(next); }}
               style={{
-                width: 22, height: 22, borderRadius: '25%',
+                width: 25, height: 25,
                 background: hex, 
                 // border: '2px dashed #ccc',
                 cursor: 'pointer', flexShrink: 0,
