@@ -1,10 +1,4 @@
-const defaultSketch = `function setup() {
-  createCanvas(400, 400);
-}
-
-function draw() {
-  background(220);
-}
+const defaultSketch = `import {getVolume} from 'mic-module';\nimport { getSmoothPressure, isPen } from 'pen';\nimport { getColor } from 'palette-link';\n\nlet prevX;\nlet prevY;\nlet brushX;\nlet brushY;\nlet lerpFactor = 0.1;\nlet steps = 10;\nlet drawingBuffer;\nlet myPicker;\nlet prevSize = 0;\n\nfunction setup() {\n  createCanvas(800, 1000);\n  drawingBuffer = createGraphics(600, 700);\n  drawingBuffer.noStroke();\n  drawingBuffer.fill(0);\n  frameRate(60);\n  // myPicker = createColorPicker('black');\n  // myPicker.position(10,10);\n  // background(50,50,50)\n\n  // slider = createSlider(1, 500, 50); // min max current\n  // slider.position(10, 10); // where it is\n  // slider.size(80); // how wide it is\n  // slider is between 10,10 and 90,10\n\n  // slider not as important because i'm the only one using it. I want to show how the function maps sound to brush size.\n}\n\nfunction draw() {\n  background(255);\n  image(drawingBuffer, 0, 0);\n  \n  let vol = getVolume();\n\n  let constant = 100;\n  // let amplified = Math.pow(vol, 1/sensitivity); // vol to the 1/sensitivity\n  // let brush_pressure = Math.pow(getSmoothPressure(),1.3);\n  let brush_pressure = isPen() ? 10*Math.pow(getSmoothPressure(),2) : 0.01;\n  // let brush_size = (1 + (vol*100))+ Math.pow(brush_pressure, 5) ;\n  let brush_size = (1 + (vol*10))+ 10*Math.pow(brush_pressure, 2); // old brush\n  //brush_size = (10 + (vol*100))+ Math.pow(brush_pressure, 5); // big brush\n  //let brush_size = 5 + 2 + vol + brush_pressure;\n  \n  if (mouseIsPressed){\n    for (let i = 0; i < steps; i++) {\n      let ratio = i / steps // wherever ratio the i is in at the for loop\n      let x = lerp(prevX, mouseX, ratio)\n      let y = lerp(prevY, mouseY, ratio)\n      // let c = myPicker.color();\n\n      drawingBuffer.fill(getColor());\n      drawingBuffer.circle(x, y, brush_size);\n      //drawingBuffer.circle(x, y, brush_size/2, brush_size*2)\n    }\n  } else { // when hovering\n    push();\n    noFill();\n    strokeWeight(0.5);\n    circle(mouseX, mouseY, brush_size);\n    pop();\n  }\n  prevX = mouseX;\n  prevY = mouseY;\n}\n
 `
 
 export default defaultSketch;
