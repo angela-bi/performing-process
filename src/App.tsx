@@ -72,9 +72,24 @@ export default function App() {
   //////////////////////
 
   const [sketches, setSketches] = useState<Sketch[]>(() => {
-    const saved = localStorage.getItem('sketches');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const saved = localStorage.getItem('sketches');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (parsed.length > 0) return parsed;
+  }
+  const id = crypto.randomUUID();
+  return [{
+    id,
+    title: 'drawing 1',
+    code: defaultSketch,
+    isRunning: false,
+    runCount: 0,
+    editorPosition: { x: 60, y: 60, w: 500, h: 600 },
+    previewPosition: { x: 580, y: 60, w: 500, h: 600 },
+    keepDrawing: false,
+    scrollTop: 0,
+  }];
+});
 
   useEffect(() => {
     localStorage.setItem('sketches', JSON.stringify(sketches));
@@ -88,7 +103,7 @@ export default function App() {
       code: defaultSketch,
       isRunning: false,
       runCount: 0,
-      editorPosition: { x, y, w: 500, h: 300 },
+      editorPosition: { x, y, w: 500, h: 600 },
       previewPosition: { x: x + 520, y, w: 500, h: 600 },
       keepDrawing: false,
       scrollTop: 0

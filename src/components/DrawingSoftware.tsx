@@ -27,7 +27,9 @@ interface DrawingSoftwareProps {
 }
 
 export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zIndex, modules }: DrawingSoftwareProps) {
+    // refs
   const editorRef = useRef<HTMLDivElement>(null);
+  const editorWRef = useRef(sketch.editorPosition.w);
   const viewRef = useRef<EditorView>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -35,6 +37,7 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, wx: 0, wy: 0 });
   const hasLoaded = useRef(false);
+
   const latest = useRef(sketch);
   latest.current = sketch;
 
@@ -43,7 +46,19 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
   const modulesCode = modules.map(m => m.name + '\n' + m.code).join('\u0000');
   const lastCode = useRef(sketch.code + modulesCode);
 
-  // ── Drag ──────────────────────────────────────────────────────────────────
+  const [editorW, setEditorW] = useState(sketch.editorPosition.w);
+  const splitterDragging = useRef(false);
+  const splitterStartX = useRef(0);
+  const splitterStartW = useRef(0);
+
+  const SPLITTER_W = 9;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelW, setPanelW] = useState(sketch.editorPosition.w + sketch.previewPosition.w + SPLITTER_W);
+  const panelWRef = useRef(panelW);
+
+  /////////////////////////
+  // dragging functionality
+  //////////////////////////
 
   function onPointerDown(e: React.PointerEvent) {
     onFocus();
@@ -65,7 +80,9 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
     onChange({ editorPosition: { ...sketch.editorPosition, x: pos.x, y: pos.y } });
   }
 
-  // ── CodeMirror ────────────────────────────────────────────────────────────
+  /////////////////////////
+  // editor code
+  //////////////////////////
 
   useEffect(() => {
     const view = new EditorView({
@@ -103,7 +120,9 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
     };
   }, []);
 
-  // ── Auto-refresh + syntax check ───────────────────────────────────────────
+   /////////////////////////
+  // syntax
+  //////////////////////////
 
   useEffect(() => {
     const current = sketch.code + modulesCode;
@@ -127,7 +146,6 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
     return () => clearTimeout(timer);
   }, [sketch.code, modulesCode]);
 
-  // ── iframe launch ─────────────────────────────────────────────────────────
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -168,19 +186,54 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
     };
   }, [sketch.runCount]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  /////////////////////////
+  // splitter
+  //////////////////////////
 
-  const panelW = (sketch.editorPosition.w ?? 400) + (sketch.previewPosition.w ?? 400) + 1; // +1 for the divider
+  function onSplitterPointerDown(e: React.PointerEvent) {
+    e.stopPropagation();
+    splitterDragging.current = true;
+    splitterStartX.current = e.clientX;
+    splitterStartW.current = editorW;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    }
+
+    function onSplitterPointerMove(e: React.PointerEvent) {
+    if (!splitterDragging.current) return;
+    const next = Math.max(120, splitterStartW.current + (e.clientX - splitterStartX.current));
+    editorWRef.current = next; // ← add this
+    setEditorW(next);
+    }
+
+    function onSplitterPointerUp() {
+    splitterDragging.current = false;
+    onChange({ editorPosition: { ...sketch.editorPosition, w: editorWRef.current } }); // ← use ref
+    }
+
+    useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+        const w = entries[0].contentRect.width;
+        const h = entries[0].contentRect.height;
+        panelWRef.current = w;
+        setPanelW(w);
+        onChange({ editorPosition: { ...latest.current.editorPosition, h } });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+    }, []);
 
   return (
     <div
-      onMouseDown={onFocus}
-      style={{
+    ref={panelRef}
+    onMouseDown={onFocus}
+    style={{
         position: 'absolute',
         left: pos.x,
         top: pos.y,
         width: panelW,
-        height: sketch.minimized ? 'auto' : sketch.editorPosition.h,
+        height: sketch.editorPosition.h,
         zIndex,
         backgroundColor: '#fff',
         border: '1px solid #ddd',
@@ -189,9 +242,11 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-      }}
+        resize: 'both',
+        minWidth: 260,
+        minHeight: 120,
+    }}
     >
-      {/* ── Shared header ── */}
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -208,7 +263,6 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
           flexShrink: 0,
         }}
       >
-        {/* Run */}
         <button
           onPointerDown={e => e.stopPropagation()}
           onClick={onRun}
@@ -220,7 +274,6 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
           </svg>
         </button>
 
-        {/* Title */}
         <input
           value={sketch.title}
           onChange={e => onChange({ title: e.target.value })}
@@ -234,14 +287,12 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
           }}
         />
 
-        {/* Syntax error (from preview side) */}
         {syntaxError && (
           <span style={{ color: '#ED225E', fontSize: 11 }}>
             paused: syntax error in {syntaxError}
           </span>
         )}
 
-        {/* Keep drawing */}
         <label
           onPointerDown={e => e.stopPropagation()}
           title="Keep the drawing when re-running"
@@ -262,7 +313,6 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
           keep drawing?
         </label>
 
-        {/* Auto-refresh */}
         <label
           onPointerDown={e => e.stopPropagation()}
           title="Re-run automatically when code changes"
@@ -283,7 +333,6 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
           auto-refresh
         </label>
 
-        {/* Minimize */}
         {/* <button
           onPointerDown={e => e.stopPropagation()}
           onClick={() => onChange({ minimized: !sketch.minimized })}
@@ -299,7 +348,6 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
           </svg>
         </button> */}
 
-        {/* Delete */}
         <button
           onPointerDown={e => e.stopPropagation()}
           onClick={onDelete}
@@ -312,22 +360,34 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
         </button>
       </div>
 
-      {/* ── Body: editor + preview side by side ── */}
-      <div style={{ flex: 1, display: sketch.minimized ? 'none' : 'flex', minHeight: 0 }}>
-        {/* Editor pane */}
+      <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden'}}>
         <div
-          ref={editorRef}
-          style={{ width: sketch.editorPosition.w, flexShrink: 0, overflow: 'hidden' }}
+            ref={editorRef}
+            style={{ width: Math.min(editorW, panelW - SPLITTER_W - 120), flexShrink: 0, overflow: 'hidden' }}
         />
 
-        {/* Divider */}
-        <div style={{ width: 1, background: '#ddd', flexShrink: 0 }} />
+        <div
+            onPointerDown={onSplitterPointerDown}
+            onPointerMove={onSplitterPointerMove}
+            onPointerUp={onSplitterPointerUp}
+            style={{
+            width: 9,
+            flexShrink: 0,
+            cursor: 'col-resize',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'transparent',
+            borderLeft: '1px solid #ddd',
+            boxSizing: 'border-box',
+            userSelect: 'none',
+            }}
+        />
 
-        {/* Preview pane */}
         <iframe
           allow="camera; microphone"
           ref={iframeRef}
-          style={{ flex: 1, border: 'none', width: '100%' }}
+          style={{ flex: 1, border: 'none', minWidth: 0 }}
           sandbox="allow-scripts allow-same-origin"
           title={sketch.title}
         />
