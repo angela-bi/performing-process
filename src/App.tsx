@@ -10,6 +10,7 @@ import defaultModule from './defaults/defaultModule';
 import { SoundWindow } from './components/SoundWindow';
 import { CameraWindow } from './components/CameraWindow';
 import { DrawingSoftware } from './components/DrawingSoftware';
+import { ColorPicker } from './components/ColorPicker';
 
 export type PanelKey = 'sound' | 'camera' | 'drawing' | 'brush';
 
@@ -210,6 +211,18 @@ export default function App() {
       // onContextMenu={handleContextMenu}
       onClick={() => setMenuOpen(false)}
     >
+      <div style={{
+      position: 'fixed',
+      top: 40,
+      left: 40,
+      zIndex: 9999,
+    }}>
+      <ColorPicker
+        color="#FF0000"
+        onChange={(hex, hsva) => console.log(hex, hsva)}
+      />
+    </div>
+    
       {sketches.map(sketch => (
         <DrawingSoftware
           key={sketch.id}
