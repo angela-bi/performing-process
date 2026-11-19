@@ -6,6 +6,31 @@ const P5_HANDLERS = [
   'touchEnded', 'windowResized',
 ];
 
+const customFunctions = `
+  window.createCustomColorPicker = function(defaultColor) {
+    const color = defaultColor ?? '#FF0000';
+    window.parent.postMessage({ type: 'OPEN_COLOR_PICKER', color }, '*');
+
+    let _color = color;
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'COLOR_UPDATE') _color = e.data.hex;
+    });
+
+    return {
+      color: () => _color,
+      value: () => _color,
+      remove: () => window.parent.postMessage({ type: 'CLOSE_COLOR_PICKER' }, '*'),
+    };
+  };
+
+  window.createCustomMic = function() {
+    window.parent.postMessage({ type: 'OPEN_MIC' }, '*');
+    return {
+      getLevel: () => window.__micLevel ?? 0,
+    };
+  };
+`;
+
 export function buildSketchHTML(code: string, snapshot?: string, modules: ModuleDoc[] = []): string {
   const imports: Record<string, string> = {};
   for (const m of modules) {
@@ -28,6 +53,7 @@ export function buildSketchHTML(code: string, snapshot?: string, modules: Module
   </head>
   <body>
     <!-- 1. the sketch itself, as a module -->
+    <script>${customFunctions}<\/script>
     <script type="module">
 ${code}
 ;${expose}

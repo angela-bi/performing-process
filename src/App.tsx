@@ -53,6 +53,9 @@ export interface ModuleDoc {
 }
 
 export default function App() {
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [pickerColor, setPickerColor] = useState('#FF0000');
+  const [showMic, setShowMic] = useState(false);
 
   const [panels, setPanels] = useState<Record<PanelKey, PanelDoc>>(() => {
     let saved: Partial<Record<PanelKey, Partial<PanelDoc>>> = {};
@@ -206,6 +209,10 @@ export default function App() {
     whiteSpace: 'nowrap',
   };
 
+  ///////////////////
+  // communicating between components
+  /////////////////
+
   return (
     <div
       className="canvas-background"
@@ -213,12 +220,17 @@ export default function App() {
       onClick={() => setMenuOpen(false)}
     >
 
-      <ColorPicker
+      { showColorPicker && (
+        <ColorPicker
         color="#FF0000"
         onChange={(hex, hsva) => console.log(hex, hsva)}
         zIndex={zIndexMap['colorpicker'] ?? 1}
         onFocus={() => bringToFront('colorpicker')}
+        setPickerColor={setPickerColor}
+        showColorPicker={showColorPicker}
       />
+      )
+      }
     
       {sketches.map(sketch => (
         <DrawingSoftware
@@ -230,6 +242,9 @@ export default function App() {
           onDelete={() => removeSketch(sketch.id)}
           zIndex={zIndexMap[sketch.id] ?? 1}
           modules={modules}
+          setShowColorPicker={setShowColorPicker}
+          setPickerColor={setPickerColor}
+          setShowMic={setShowMic}
         />
       ))}
   

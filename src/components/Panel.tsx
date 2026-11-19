@@ -65,7 +65,7 @@ export function Panel({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         style={{
-          display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+          display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px',
           background: headerColor, borderBottom: '1px solid #ddd',
           cursor: 'grab', userSelect: 'none', touchAction: 'none', flexShrink: 0,
           fontSize: 12, color: '#888',
@@ -78,6 +78,16 @@ export function Panel({
         >
           {actions}
         </span>
+        <button
+                onPointerDown={e => e.stopPropagation()}
+                // onClick={onDelete}
+                style={{ border: 'none', background: 'transparent', padding: '4px', marginLeft: 'auto' }}
+                >
+                <svg width="25px" height="25px" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="6" y1="6" x2="12" y2="12" stroke="#bdbdbd" strokeWidth="1.5" />
+                    <line x1="12" y1="6" x2="6" y2="12" stroke="#bdbdbd" strokeWidth="1.5" />
+                </svg>
+        </button>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{children}</div>
     </div>

@@ -24,9 +24,12 @@ interface DrawingSoftwareProps {
   onDelete: () => void;
   zIndex: number;
   modules: ModuleDoc[];
+  setShowColorPicker: React.Dispatch<React.SetStateAction<boolean>>;
+  setPickerColor: React.Dispatch<React.SetStateAction<string>>;
+  setShowMic: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zIndex, modules }: DrawingSoftwareProps) {
+export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zIndex, modules, setPickerColor, setShowColorPicker, setShowMic }: DrawingSoftwareProps) {
     // refs
   const editorRef = useRef<HTMLDivElement>(null);
   const editorWRef = useRef(sketch.editorPosition.w);
@@ -223,6 +226,32 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
     ro.observe(el);
     return () => ro.disconnect();
     }, []);
+
+
+    ///////////////
+    // listening to internal calls
+    ///////////////
+
+    useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.source !== iframeRef.current?.contentWindow) return;
+      if (e.data?.type === 'OPEN_COLOR_PICKER') {
+        setPickerColor(e.data.color);
+        setShowColorPicker(true);
+      }
+      if (e.data?.type === 'OPEN_MIC') {
+        setShowMic(true);
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  useEffect(() => {
+  setShowColorPicker(false);
+  // setColorPickerOwner(null);
+  setShowMic(false);
+}, [sketch.runCount]);
 
   return (
     <div

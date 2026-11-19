@@ -7,6 +7,8 @@ export interface ColorPickerProps {
   onChange?: (hex: string, hsva: HSVA) => void;
   zIndex?: number;
   onFocus?: () => void;
+  showColorPicker: boolean;
+  setPickerColor: React.Dispatch<React.SetStateAction<string>>;
 }
 
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
@@ -251,7 +253,7 @@ function SatValCanvas({
 
 const MAX_HISTORY = 12;
 
-export function ColorPicker({ color = '#FF0000', onChange, zIndex, onFocus }: ColorPickerProps) {
+export function ColorPicker({ color = '#FF0000', onChange, zIndex, onFocus, setPickerColor, showColorPicker }: ColorPickerProps) {
   const [hsva, setHsva] = useState<HSVA>(() => hexToHsva(color));
   const [hexField, setHexField] = useState(color.toUpperCase());
   const [history, setHistory] = useState<string[]>([]);
