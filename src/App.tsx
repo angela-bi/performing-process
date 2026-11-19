@@ -12,13 +12,14 @@ import { CameraWindow } from './components/CameraWindow';
 import { DrawingSoftware } from './components/DrawingSoftware';
 import { ColorPicker } from './components/ColorPicker';
 
-export type PanelKey = 'sound' | 'camera' | 'drawing' | 'brush';
+export type PanelKey = 'sound' | 'camera' | 'drawing' | 'brush' | 'colorpicker';
 
 const DEFAULT_PANELS: Record<PanelKey, PanelDoc> = {
   sound:   { position: { x: 40,  y: 40,  w: 420, h: 520 } },
   camera:  { position: { x: 480, y: 40,  w: 400, h: 340 } },
   drawing: { position: { x: 900, y: 40,  w: 640, h: 700 } },
   brush:   { position: { x: 480, y: 400, w: 400, h: 360 } },
+  colorpicker: { position: { x: 100, y: 100, w: 400, h: 360 } }
 };
 
 const PANEL_KEYS = Object.keys(DEFAULT_PANELS) as PanelKey[];
@@ -162,13 +163,13 @@ export default function App() {
   }
 
   const zIndexCounter = useRef(10);
-  const zIndexMap = useRef<Record<string, number>>({});
+  const [zIndexMap, setZIndexMap] = useState<Record<string, number>>({});
 
   function bringToFront(id: string) {
     zIndexCounter.current += 1;
-    zIndexMap.current[id] = zIndexCounter.current;
+    const next = zIndexCounter.current;
+    setZIndexMap(prev => ({ ...prev, [id]: next }));
   }
-
   //////////
   // menu //
   //////////
@@ -211,17 +212,13 @@ export default function App() {
       // onContextMenu={handleContextMenu}
       onClick={() => setMenuOpen(false)}
     >
-      <div style={{
-      position: 'fixed',
-      top: 40,
-      left: 40,
-      zIndex: 9999,
-    }}>
+
       <ColorPicker
         color="#FF0000"
         onChange={(hex, hsva) => console.log(hex, hsva)}
+        zIndex={zIndexMap['colorpicker'] ?? 1}
+        onFocus={() => bringToFront('colorpicker')}
       />
-    </div>
     
       {sketches.map(sketch => (
         <DrawingSoftware
@@ -231,12 +228,12 @@ export default function App() {
           onRun={() => updateSketch(sketch.id, { isRunning: true, runCount: sketch.runCount + 1 })}
           onFocus={() => bringToFront(sketch.id)}
           onDelete={() => removeSketch(sketch.id)}
-          zIndex={zIndexMap.current[sketch.id] ?? 1}
+          zIndex={zIndexMap[sketch.id] ?? 1}
           modules={modules}
         />
       ))}
   
-      {modules.map(m => (
+      {/* {modules.map(m => (
         <Module
           key={m.id}
           module={m}
@@ -246,19 +243,19 @@ export default function App() {
           onDelete={() => removeModule(m.id)}
           zIndex={zIndexMap.current[m.id] ?? 1}
         />
-      ))}
+      ))} */}
 
       <SoundWindow
         doc={panels.sound}
         onChange={c => updatePanel('sound', c)}
         onFocus={() => bringToFront('sound')}
-        zIndex={zIndexMap.current['sound'] ?? 1}
+        zIndex={zIndexMap['sound'] ?? 1}
       />
       <CameraWindow
         doc={panels.camera}
         onChange={c => updatePanel('camera', c)}
         onFocus={() => bringToFront('camera')}
-        zIndex={zIndexMap.current['camera'] ?? 1}
+        zIndex={zIndexMap['camera'] ?? 1}
       />
 
     <div
@@ -276,8 +273,8 @@ export default function App() {
     >
       {menuOpen && (
         <>
-          <button onClick={handleAddModule} style={menuItemStyle}>+ New module</button>
-          <button onClick={handleAddEditor} style={menuItemStyle}>+ New editor</button>
+          {/* <button onClick={handleAddModule} style={menuItemStyle}>+ New module</button> */}
+          <button onClick={handleAddEditor} style={menuItemStyle}>+ New drawing</button>
           {/* <button onClick={() => { const { x, y } = nextSpot(); addSound(x, y); setMenuOpen(false); }} style={menuItemStyle}>+ New sound</button> */}
         </>
       )}

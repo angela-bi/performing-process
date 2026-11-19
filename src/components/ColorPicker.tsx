@@ -5,6 +5,8 @@ export interface HSVA { h: number; s: number; v: number; a: number }
 export interface ColorPickerProps {
   color?: string;
   onChange?: (hex: string, hsva: HSVA) => void;
+  zIndex?: number;
+  onFocus?: () => void;
 }
 
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
@@ -100,17 +102,27 @@ function HueSlider({ hue, onChange }: { hue: number; onChange: (h: number) => vo
   return (
     <div
       ref={trackRef}
-      style={{
-        flex: 1, height: 12, borderRadius: 6, cursor: 'pointer', position: 'relative',
-        background: 'linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)',
-      }}
+      style={{ position: 'relative', height: 16, cursor: 'pointer', width: '100%' }}
       {...drag}
     >
+      {/* inset track visual */}
       <div style={{
-        position: 'absolute', top: '50%', left: `${(hue / 360) * 100}%`,
+        position: 'absolute',
+        left: 8, right: 8,
+        top: '50%', transform: 'translateY(-50%)',
+        height: 12, borderRadius: 6,
+        background: 'linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)',
+      }} />
+      {/* thumb */}
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: `calc(8px + ${(hue / 360)} * (100% - 16px))`,
         width: 16, height: 16, borderRadius: '50%',
-        border: '3px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 0 0 0.5px rgba(0,0,0,.3)',
-        transform: 'translate(-50%,-50%)', pointerEvents: 'none',
+        border: '3px solid rgba(255,255,255,0.7)',
+        boxShadow: '0 0 0 0.5px rgba(0,0,0,.3)',
+        transform: 'translate(-50%,-50%)',
+        pointerEvents: 'none',
         background: `hsl(${hue},100%,50%)`,
       }} />
     </div>
@@ -138,10 +150,9 @@ function AlphaSlider({
       style={{ flex: 1, position: 'relative', height: 16, cursor: 'pointer' }}
       {...drag}
     >
-      {/* clipped track visuals — inset so thumb can overflow */}
       <div style={{
         position: 'absolute',
-        left: 8, right: 8,          // ← inset by half the thumb width
+        left: 8, right: 8,
         top: '50%', transform: 'translateY(-50%)',
         height: 12, borderRadius: 6,
         overflow: 'hidden',
@@ -240,11 +251,33 @@ function SatValCanvas({
 
 const MAX_HISTORY = 12;
 
-export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
+export function ColorPicker({ color = '#FF0000', onChange, zIndex, onFocus }: ColorPickerProps) {
   const [hsva, setHsva] = useState<HSVA>(() => hexToHsva(color));
   const [hexField, setHexField] = useState(color.toUpperCase());
-  const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
+  const historyTimer = useRef<number | undefined>(undefined);
+
+  const [pos, setPos] = useState({ x: 100, y: 100 });
+    const dragging = useRef(false);
+    const dragStart = useRef({ mx: 0, my: 0, wx: 0, wy: 0 });
+
+    function onPointerDown(e: React.PointerEvent) {
+    dragging.current = true;
+    dragStart.current = { mx: e.clientX, my: e.clientY, wx: pos.x, wy: pos.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    }
+
+    function onPointerMove(e: React.PointerEvent) {
+    if (!dragging.current) return;
+    setPos({
+        x: dragStart.current.wx + (e.clientX - dragStart.current.mx),
+        y: dragStart.current.wy + (e.clientY - dragStart.current.my),
+    });
+    }
+
+    function onPointerUp() {
+    dragging.current = false;
+    }
 
   // sync when prop changes externally
   useEffect(() => {
@@ -263,11 +296,15 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
     const nextHex = hsvaToHex(next.h, next.s, next.v, next.a);
     setHexField(nextHex);
     onChange?.(nextHex, next);
-  }, [onChange]);
 
-  const pushHistory = useCallback((hex: string) => {
-    setHistory(prev => [hex, ...prev.filter(x => x !== hex)].slice(0, MAX_HISTORY));
-  }, []);
+    clearTimeout(historyTimer.current);
+    historyTimer.current = window.setTimeout(() => {
+        setHistory(prev => {
+        if (prev[0] === nextHex) return prev;
+        return [nextHex, ...prev.filter(x => x !== nextHex)].slice(0, MAX_HISTORY);
+        });
+    }, 500);
+    }, [onChange]);
 
   // ── input handlers ──
 
@@ -291,28 +328,28 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
       return;
     }
     const next = hexToHsva(val);
-    pushHistory(val.toUpperCase());
+    // pushHistory(val.toUpperCase());
     commit(next);
-  }, [hexField, hex, commit, pushHistory]);
+  }, [hexField, hex, commit]);
 
   const onRGBCommit = useCallback(() => {
     const rr = Math.max(0, Math.min(255, parseInt(String(r)) || 0));
     const gg = Math.max(0, Math.min(255, parseInt(String(g)) || 0));
     const bb = Math.max(0, Math.min(255, parseInt(String(b)) || 0));
     const [hh, ss, vv] = rgbToHsv(rr, gg, bb);
-    pushHistory(hsvaToHex(hh, ss, vv, a));
+    // pushHistory(hsvaToHex(hh, ss, vv, a));
     commit({ h: hh, s: ss, v: vv, a });
-  }, [r, g, b, a, commit, pushHistory]);
+  }, [r, g, b, a, commit]);
 
   const onEyeDrop = useCallback(async () => {
     if (typeof (window as any).EyeDropper === 'undefined') return;
     try {
       const result = await new (window as any).EyeDropper().open();
       const next = hexToHsva(result.sRGBHex);
-      pushHistory(result.sRGBHex.toUpperCase());
+    //   pushHistory(result.sRGBHex.toUpperCase());
       commit(next);
     } catch { /* user cancelled */ }
-  }, [commit, pushHistory]);
+  }, [commit]);
 
 
   const row: React.CSSProperties = {
@@ -322,9 +359,12 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
 
   return (
     <div
-        // onMouseDown={onFocus}
+        onMouseDown={onFocus}
         style={{
             width: '260px',
+            left: pos.x,
+            top: pos.y,
+            zIndex,
             position: 'absolute',
             backgroundColor: '#fff',
             border: '1px solid #ddd',
@@ -336,6 +376,9 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
         }}
     >
         <div
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
             style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -346,6 +389,8 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
                 gap: '8px',
                 fontFamily: 'Montserrat, sans-serif',
                 fontSize: '12px', color: '#888',
+                cursor: 'grab',
+                userSelect: 'none',
             }}
         >
             color picker
@@ -364,35 +409,31 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
         {/* gradient stuff */}
         <SatValCanvas hue={h} sat={s} val={v} onChange={onSVChange} />
     
-        <div style={{ padding: '12px 14px 0' }}>
-            <div style={{ ...row, marginBottom: 10 }}>
-            <div style={{
-                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                border: '1px solid #ccc',
-                background: `rgba(${r},${g},${b},${a})`,
-            }} />
-            <button style={{backgroundColor: 'transparent', border: 'none'}} onClick={onEyeDrop} title="Pick color from screen">
-                <svg width="20" height="20" viewBox="0 0 214 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M144.051 89.9872L29.8706 150.019" stroke-width="37" stroke-linecap="round" stroke="#535252"/>
-                <path d="M5.75395 75.1397C-7.09667 50.6978 2.29993 20.4662 26.7419 7.61555L30.2823 5.75411C54.7243 -7.09652 84.9558 2.30009 97.8065 26.742L134.105 95.7814L42.0522 144.179L5.75395 75.1397Z" fill="#535252"/>
-                <path d="M188.27 311.62C197.314 306.866 200.791 295.68 196.036 286.636C191.281 277.593 180.095 274.116 171.052 278.871L179.661 295.246L188.27 311.62ZM69.1091 160.175L52.7343 168.785C70.5181 202.61 90.7793 241.866 110.747 270.365C120.644 284.491 131.515 297.538 143.137 305.906C154.947 314.408 171.4 320.49 188.27 311.62L179.661 295.246L171.052 278.871C170.902 278.95 170.985 278.978 170.581 278.903C169.8 278.758 167.885 278.132 164.755 275.878C158.281 271.217 150.278 262.306 141.049 249.134C122.765 223.037 103.765 186.338 85.4838 151.566L69.1091 160.175Z" fill="#535252"/>
-                <path d="M190.926 310.224C181.882 314.979 170.697 311.502 165.942 302.459C161.187 293.415 164.664 282.229 173.707 277.475L182.317 293.849L190.926 310.224ZM133.715 126.208L150.089 117.599C167.873 151.424 188.727 190.369 200.886 222.973C206.913 239.135 211.498 255.486 211.803 269.803C212.113 284.352 207.796 301.354 190.926 310.224L182.317 293.849L173.707 277.475C173.858 277.396 173.834 277.48 174.001 277.105C174.324 276.38 174.894 274.447 174.812 270.591C174.642 262.615 171.837 250.971 166.218 235.901C155.084 206.045 135.622 169.589 117.34 134.818L133.715 126.208Z" fill="#535252"/>
-                <path d="M183.804 300.976L194.508 321.334" stroke-width="37" stroke-linecap="round" stroke="#535252"/>
-                </svg>
-            </button>
-            <HueSlider hue={h} onChange={onHueChange} />
-            </div>
-
-            <div style={{ ...row, marginBottom: 10 }}>
-            <div style={{ width: 30, flexShrink: 0 }} />
-            <div style={{ width: 30, flexShrink: 0 }} />
-            <AlphaSlider alpha={a} hue={h} sat={s} val={v} onChange={onAlphaChange} />
-            </div>
-      </div>
+        <div style={{ padding: '12px 14px 0' , display: 'flex', flexDirection: 'row', gap: 10}}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <div style={{
+                    width: 30, height: 30, flexShrink: 0,
+                    border: '1px solid #ccc',
+                    background: `rgba(${r},${g},${b},${a})`,
+                }} />
+                <button style={{backgroundColor: 'transparent', border: 'none'}} onClick={onEyeDrop} title="Pick color from screen">
+                    <svg width="20" height="20" viewBox="0 0 214 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M144.051 89.9872L29.8706 150.019" stroke-width="37" stroke-linecap="round" stroke="#535252"/>
+                    <path d="M5.75395 75.1397C-7.09667 50.6978 2.29993 20.4662 26.7419 7.61555L30.2823 5.75411C54.7243 -7.09652 84.9558 2.30009 97.8065 26.742L134.105 95.7814L42.0522 144.179L5.75395 75.1397Z" fill="#535252"/>
+                    <path d="M188.27 311.62C197.314 306.866 200.791 295.68 196.036 286.636C191.281 277.593 180.095 274.116 171.052 278.871L179.661 295.246L188.27 311.62ZM69.1091 160.175L52.7343 168.785C70.5181 202.61 90.7793 241.866 110.747 270.365C120.644 284.491 131.515 297.538 143.137 305.906C154.947 314.408 171.4 320.49 188.27 311.62L179.661 295.246L171.052 278.871C170.902 278.95 170.985 278.978 170.581 278.903C169.8 278.758 167.885 278.132 164.755 275.878C158.281 271.217 150.278 262.306 141.049 249.134C122.765 223.037 103.765 186.338 85.4838 151.566L69.1091 160.175Z" fill="#535252"/>
+                    <path d="M190.926 310.224C181.882 314.979 170.697 311.502 165.942 302.459C161.187 293.415 164.664 282.229 173.707 277.475L182.317 293.849L190.926 310.224ZM133.715 126.208L150.089 117.599C167.873 151.424 188.727 190.369 200.886 222.973C206.913 239.135 211.498 255.486 211.803 269.803C212.113 284.352 207.796 301.354 190.926 310.224L182.317 293.849L173.707 277.475C173.858 277.396 173.834 277.48 174.001 277.105C174.324 276.38 174.894 274.447 174.812 270.591C174.642 262.615 171.837 250.971 166.218 235.901C155.084 206.045 135.622 169.589 117.34 134.818L133.715 126.208Z" fill="#535252"/>
+                    <path d="M183.804 300.976L194.508 321.334" stroke-width="37" stroke-linecap="round" stroke="#535252"/>
+                    </svg>
+                </button>
+            </div>  
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                <HueSlider hue={h} onChange={onHueChange} />
+                <AlphaSlider alpha={a} hue={h} sat={s} val={v} onChange={onAlphaChange} />
+            </div>          
+        </div>
 
       {/* history */}
-      {history.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 0, padding: '10px 14px 10px' }}>
+        <div style={{ display: 'flex', height: '30px', flexDirection: 'row', overflowX: 'scroll', gap: 0, padding: '10px 14px 10px' }}>
           {history.map(hex => (
             <div
               key={hex}
@@ -407,7 +448,6 @@ export function ColorPicker({ color = '#FF0000', onChange }: ColorPickerProps) {
             />
           ))}
         </div>
-      )}
     </div>
 
   );
