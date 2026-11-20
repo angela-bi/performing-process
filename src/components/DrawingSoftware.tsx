@@ -26,10 +26,14 @@ interface DrawingSoftwareProps {
   modules: ModuleDoc[];
   setShowColorPicker: React.Dispatch<React.SetStateAction<boolean>>;
   setPickerColor: React.Dispatch<React.SetStateAction<string>>;
+  setLiveColor: React.Dispatch<React.SetStateAction<string | null>>;
+  liveColor: string | null;
+  isColorPickerOwner: boolean;
+  setColorPickerOwner: React.Dispatch<React.SetStateAction<string | null>>;
   setShowMic: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zIndex, modules, setPickerColor, setShowColorPicker, setShowMic }: DrawingSoftwareProps) {
+export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zIndex, modules, setPickerColor, setShowColorPicker, setLiveColor, liveColor, isColorPickerOwner, setColorPickerOwner, setShowMic }: DrawingSoftwareProps) {
     // refs
   const editorRef = useRef<HTMLDivElement>(null);
   const editorWRef = useRef(sketch.editorPosition.w);
@@ -237,7 +241,12 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
       if (e.source !== iframeRef.current?.contentWindow) return;
       if (e.data?.type === 'OPEN_COLOR_PICKER') {
         setPickerColor(e.data.color);
+        setLiveColor(e.data.color);
+        setColorPickerOwner(latest.current.id);
         setShowColorPicker(true);
+      }
+      if (e.data?.type === 'CLOSE_COLOR_PICKER') {
+        setShowColorPicker(false);
       }
       if (e.data?.type === 'OPEN_MIC') {
         setShowMic(true);
@@ -246,6 +255,12 @@ export function DrawingSoftware({ sketch, onChange, onRun, onFocus, onDelete, zI
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, []);
+
+  // forward color picker changes into the sketch iframe (handled by createCustomColorPicker)
+  useEffect(() => {
+    if (!isColorPickerOwner || !liveColor) return;
+    iframeRef.current?.contentWindow?.postMessage({ type: 'COLOR_UPDATE', hex: liveColor }, '*');
+  }, [liveColor, isColorPickerOwner]);
 
   useEffect(() => {
   setShowColorPicker(false);

@@ -54,7 +54,9 @@ export interface ModuleDoc {
 
 export default function App() {
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [pickerColor, setPickerColor] = useState('#FF0000');
+  const [pickerColor, setPickerColor] = useState('#FF0000');   // initial color the picker opens with
+  const [liveColor, setLiveColor] = useState<string | null>(null); // latest color chosen in the picker
+  const [colorPickerOwner, setColorPickerOwner] = useState<string | null>(null); // sketch id that opened the picker
   const [showMic, setShowMic] = useState(false);
 
   const [panels, setPanels] = useState<Record<PanelKey, PanelDoc>>(() => {
@@ -222,8 +224,8 @@ export default function App() {
 
       { showColorPicker && (
         <ColorPicker
-        color="#FF0000"
-        onChange={(hex, hsva) => console.log(hex, hsva)}
+        color={pickerColor}
+        onChange={hex => setLiveColor(hex)}
         zIndex={zIndexMap['colorpicker'] ?? 1}
         onFocus={() => bringToFront('colorpicker')}
         setPickerColor={setPickerColor}
@@ -244,6 +246,10 @@ export default function App() {
           modules={modules}
           setShowColorPicker={setShowColorPicker}
           setPickerColor={setPickerColor}
+          setLiveColor={setLiveColor}
+          liveColor={liveColor}
+          isColorPickerOwner={colorPickerOwner === sketch.id}
+          setColorPickerOwner={setColorPickerOwner}
           setShowMic={setShowMic}
         />
       ))}
